@@ -4,6 +4,7 @@ ___INFO___
   "type": "TAG",
   "id": "cvt_temp_public_id",
   "version": 1,
+  "categories": ["DATA_WAREHOUSING", "ANALYTICS"],
   "securityGroups": [],
   "displayName": "Write to BigQuery",
   "brand": {

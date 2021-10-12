@@ -1,0 +1,5 @@
+homepage: "https://www.trakken.de"
+documentation: "https://gitlab.com/trakken/tech-da/first-party-templates/gtm-server-tag-template-write-to-bigquery/README.md"
+versions:
+  - sha: acecc952666c68080b274e73fc0ad28e4d06f9ed
+    changeNotes: Initial release.
