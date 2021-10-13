@@ -196,13 +196,6 @@ ___TEMPLATE_PARAMETERS___
     "valueValidators": [
       {
         "type": "NON_EMPTY"
-      },
-      {
-        "type": "REGEX",
-        "args": [
-          "^.*\\.[A-Za-z0-9_]*\\.[A-Za-z0-9_]*$"
-        ],
-        "errorMessage": "Letters, numbers and underscores are allowed"
       }
     ],
     "valueHint": "project-id.dataset_id.table_name"
