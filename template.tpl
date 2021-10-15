@@ -193,6 +193,7 @@ ___TEMPLATE_PARAMETERS___
     "simpleValueType": true,
     "alwaysInSummary": true,
     "notSetText": "required",
+    "help": "this is the dot-separated ID string that you would also use when writing a query for this table in BigQuery",
     "valueValidators": [
       {
         "type": "NON_EMPTY"
