@@ -5,3 +5,5 @@ versions:
     changeNotes: Initial release.
   - sha: b31d2f1b1aaf37268e6dea8513a36b6edbce04df
     changeNotes: Helptext added.
+  - sha: bdf2f7324687f7985c4dddfec4ddddf74130ef0b
+    changeNotes: Added to possibility to add custom data in addition to the default event data.
