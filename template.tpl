@@ -24,23 +24,22 @@ Created on 20/05/2021, 11:29:20
 
 ___SANDBOXED_JS_FOR_SERVER___
 
-const BigQuery = require('BigQuery');
-const getAllEventData = require('getAllEventData');
+const BigQuery = require("BigQuery");
+const getAllEventData = require("getAllEventData");
 const log = require("logToConsole");
 const JSON = require("JSON");
 const getTimestampMillis = require("getTimestampMillis");
 
-const connectionInfo = {
-  'projectId': data.tableId.split(".")[0],
-  'datasetId': data.tableId.split(".")[1],
-  'tableId': data.tableId.split(".")[2],
-};
+const connectionInfo = getConnectionInfo(data.tableId);
+testLog("connectionInfo", connectionInfo);
 
 let writeData = {};
 
 if (data.writeableData === "fullEventData") {
   writeData = getAllEventData();
-} else if (data.customData && data.customData.length > 0) {
+}
+
+if (data.customData && data.customData.length) {
   for (let i = 0; i < data.customData.length; i += 1) {
     const elem = data.customData[i];
     writeData[elem.fieldName] = elem.fieldValue;
@@ -52,26 +51,44 @@ if (data.addTimestamp) {
 }
 
 const rows = [writeData];
+testLog("rows", rows);
 
 const options = {
-  'ignoreUnknownValues': true,
-  'skipInvalidRows': false,
+  ignoreUnknownValues: true,
+  skipInvalidRows: false,
 };
 
-// we log everything for testing purposes
-log(connectionInfo);
-log(rows);
+BigQuery.insert(connectionInfo, rows, options, data.gtmOnSuccess, (err) => {
+  log("BigQuery insert error: ", JSON.stringify(err));
+  data.gtmOnFailure();
+});
 
-BigQuery.insert(
-  connectionInfo,
-  rows,
-  options,
-  data.gtmOnSuccess,
-  (err) => {
-    log("BigQuery insert error: ", JSON.stringify(err));
-    data.gtmOnFailure();
-  }
-);
+/**
+ * -----
+ * DECLARATIONS
+ * -----
+ */
+
+/**
+ * since we cannot directly test if the BigQuery.insert function was called
+ * with the right arguments we use this as a workaround and simply
+ * check if this logged function was called with the arguments that
+ * the BigQuery.insert function should be called with
+ *
+ * @param {*} variableName
+ * @param {*} variableValue
+ */
+function testLog(variableName, variableValue) {
+  log("----testLog: " + variableName + " = " + JSON.stringify(variableValue));
+}
+
+function getConnectionInfo(tableId) {
+  return {
+    projectId: tableId.split(".")[0],
+    datasetId: tableId.split(".")[1],
+    tableId: tableId.split(".")[2],
+  };
+}
 
 ___SERVER_PERMISSIONS___
 
@@ -193,7 +210,6 @@ ___TEMPLATE_PARAMETERS___
     "simpleValueType": true,
     "alwaysInSummary": true,
     "notSetText": "required",
-    "help": "this is the dot-separated ID string that you would also use when writing a query for this table in BigQuery",
     "valueValidators": [
       {
         "type": "NON_EMPTY"
@@ -209,89 +225,72 @@ ___TEMPLATE_PARAMETERS___
     "valueHint": "project-id.dataset_id.table_name"
   },
   {
-    "type": "GROUP",
-    "name": "group1",
+    "type": "LABEL",
+    "name": "label2",
+    "displayName": "▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️",
+    "enablingConditions": []
+  },
+  {
+    "type": "RADIO",
+    "name": "writeableData",
     "displayName": "Data to Write",
-    "groupStyle": "ZIPPY_OPEN",
-    "subParams": [
+    "radioItems": [
       {
-        "type": "RADIO",
-        "name": "writeableData",
-        "displayName": "Data to Write",
-        "radioItems": [
-          {
-            "value": "fullEventData",
-            "displayValue": "All Event Data",
-            "help": "If you select this option, this tag will try to write all event data that the responsible client creates to BigQuery. Only those event-keys that also exist in the schema of the target table will be accepted by BigQuery. All other event-keys will be discarded."
-          },
-          {
-            "value": "custom",
-            "displayValue": "Custom Data",
-            "subParams": [
-              {
-                "type": "SIMPLE_TABLE",
-                "name": "customData",
-                "displayName": "Custom Data",
-                "simpleTableColumns": [
-                  {
-                    "defaultValue": "",
-                    "displayName": "Field Name",
-                    "name": "fieldName",
-                    "type": "TEXT",
-                    "valueHint": "bigquery_column_name",
-                    "isUnique": true,
-                    "valueValidators": [
-                      {
-                        "type": "NON_EMPTY"
-                      },
-                      {
-                        "type": "REGEX",
-                        "args": [
-                          "^[A-Za-z0-9_]*$"
-                        ],
-                        "errorMessage": "Letters, numbers and underscores are allowed"
-                      }
-                    ]
-                  },
-                  {
-                    "defaultValue": "",
-                    "displayName": "Field Value",
-                    "name": "fieldValue",
-                    "type": "TEXT"
-                  }
-                ],
-                "enablingConditions": [
-                  {
-                    "paramName": "writeableData",
-                    "paramValue": "custom",
-                    "type": "EQUALS"
-                  }
-                ]
-              }
-            ]
-          }
-        ],
-        "simpleValueType": true
+        "value": "fullEventData",
+        "displayValue": "All Event Data",
+        "help": "If you select this option, this tag will try to write all event data that the responsible client creates to BigQuery. Only those event-keys that also exist in the schema of the target table will be accepted by BigQuery. All other event-keys will be discarded."
       },
       {
-        "type": "CHECKBOX",
-        "name": "addTimestamp",
-        "checkboxText": "Add Event Timestamp",
-        "simpleValueType": true,
-        "help": "This option will add the millisecond timestamp to the event data written to BigQuery. The BigQuery target column will need to be of the INTEGER data type"
-      },
+        "value": "custom",
+        "displayValue": "Custom Data Only",
+        "subParams": [],
+        "help": "If you select this option, then only the column specified below will be written to your BigQuery table. No default data from the event will be written"
+      }
+    ],
+    "simpleValueType": true
+  },
+  {
+    "type": "LABEL",
+    "name": "label2 (2)",
+    "displayName": "▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️",
+    "enablingConditions": []
+  },
+  {
+    "type": "LABEL",
+    "name": "label3",
+    "displayName": "All Event Data plus   ⤵️",
+    "enablingConditions": [
       {
+        "paramName": "writeableData",
+        "paramValue": "fullEventData",
+        "type": "EQUALS"
+      }
+    ]
+  },
+  {
+    "type": "LABEL",
+    "name": "label4",
+    "displayName": "Only this data   ⤵️",
+    "enablingConditions": [
+      {
+        "paramName": "writeableData",
+        "paramValue": "custom",
+        "type": "EQUALS"
+      }
+    ]
+  },
+  {
+    "type": "SIMPLE_TABLE",
+    "name": "customData",
+    "displayName": "Custom Data",
+    "simpleTableColumns": [
+      {
+        "defaultValue": "",
+        "displayName": "Field Name",
+        "name": "fieldName",
         "type": "TEXT",
-        "name": "timestampFieldName",
-        "displayName": "BigQuery field name of timestamp",
-        "simpleValueType": true,
-        "enablingConditions": [
-          {
-            "paramName": "addTimestamp",
-            "paramValue": true,
-            "type": "EQUALS"
-          }
-        ],
+        "valueHint": "bigquery_column_name",
+        "isUnique": true,
         "valueValidators": [
           {
             "type": "NON_EMPTY"
@@ -303,10 +302,51 @@ ___TEMPLATE_PARAMETERS___
             ],
             "errorMessage": "Letters, numbers and underscores are allowed"
           }
-        ],
-        "defaultValue": "timestamp"
+        ]
+      },
+      {
+        "defaultValue": "",
+        "displayName": "Field Value",
+        "name": "fieldValue",
+        "type": "TEXT",
+        "valueHint": "column_value"
       }
-    ]
+    ],
+    "enablingConditions": [],
+    "help": "column keys specified here will potentially override the default keys from the event data"
+  },
+  {
+    "type": "CHECKBOX",
+    "name": "addTimestamp",
+    "checkboxText": "Add Event Timestamp",
+    "simpleValueType": true,
+    "help": "This option will add the millisecond timestamp to the event data written to BigQuery. The BigQuery target column will need to be of the INTEGER data type"
+  },
+  {
+    "type": "TEXT",
+    "name": "timestampFieldName",
+    "displayName": "BigQuery field name of timestamp",
+    "simpleValueType": true,
+    "enablingConditions": [
+      {
+        "paramName": "addTimestamp",
+        "paramValue": true,
+        "type": "EQUALS"
+      }
+    ],
+    "valueValidators": [
+      {
+        "type": "NON_EMPTY"
+      },
+      {
+        "type": "REGEX",
+        "args": [
+          "^[A-Za-z0-9_]*$"
+        ],
+        "errorMessage": "Letters, numbers and underscores are allowed"
+      }
+    ],
+    "defaultValue": "timestamp"
   }
 ]
 
@@ -318,7 +358,6 @@ https://developers.google.com/tag-manager/gallery-tos (or such other URL as
 Google may provide), as modified from time to time.
 
 ___TESTS___
-
 
 scenarios:
 - name: no BQ connection, no gtmSuccesscall
@@ -335,57 +374,242 @@ scenarios:
     assertApi('getAllEventData').wasNotCalled();
     assertApi('BigQuery.insert').wasNotCalled();
 - name: full event data written to BQ no timestamp
-  code: "const mockData = {\n  tableId: \"test-project.test_dataset.test_table\",\n\
-    \  writeableData: \"fullEventData\",\n  addTimestamp: false,\n};\n\n\nconst testConnectionInfo\
-    \ = {\n  'projectId': mockData.tableId.split(\".\")[0],\n  'datasetId': mockData.tableId.split(\"\
-    .\")[1],\n  'tableId': mockData.tableId.split(\".\")[2],\n};\nconst testRows =\
-    \ [testEvent];\n\nconst testOptions = {\n  'ignoreUnknownValues': true,\n  'skipInvalidRows':\
-    \ false,\n};\n\n// Call runCode to run the template's code.\nrunCode(mockData);\n\
-    \n// Verify that the tag finished successfully.\nassertApi('getAllEventData').wasCalled();\n\
-    \n// currently, it doesnt seem to be possible to \n// test the bigquery.insert\
-    \ function directly\n// therefore, I resolve to checking if the data\n// passed\
-    \ into it looks as expected\nassertApi('logToConsole').wasCalledWith(testRows);\n\
-    assertApi('logToConsole').wasCalledWith(testConnectionInfo);"
+  code: |
+    const mockData = {
+      tableId: "test-project.test_dataset.test_table",
+      writeableData: "fullEventData",
+      addTimestamp: false,
+    };
+
+
+    const testConnectionInfo = JSON.stringify({
+      'projectId': mockData.tableId.split(".")[0],
+      'datasetId': mockData.tableId.split(".")[1],
+      'tableId': mockData.tableId.split(".")[2],
+    });
+    const testRows = JSON.stringify([testEvent]);
+
+    const testOptions = {
+      'ignoreUnknownValues': true,
+      'skipInvalidRows': false,
+    };
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('getAllEventData').wasCalled();
+
+
+    /**
+     * since we cannot directly test if the BigQuery.insert function was called
+     * with the right arguments we use this as a workaround and simply
+     * check if this logged function was called with the arguments that
+     * the BigQuery.insert function should be called with
+     */
+    assertApi('logToConsole').wasCalledWith("----testLog: connectionInfo = " + testConnectionInfo);
+    assertApi('logToConsole').wasCalledWith("----testLog: rows = " + testRows);
 - name: full event data written to BQ with timestamp
-  code: "const mockData = {\n  projectId: \"test-project\",\n  datasetId: \"test_dataset\"\
-    ,\n  tableId: \"test_table\",\n  writeableData: \"fullEventData\",\n  addTimestamp:\
-    \ true,\n  timestampFieldName: \"timestamp\"\n};\n\nconst testConnectionInfo =\
-    \ {\n  'projectId': mockData.tableId.split(\".\")[0],\n  'datasetId': mockData.tableId.split(\"\
-    .\")[1],\n  'tableId': mockData.tableId.split(\".\")[2],\n};\n\ntestEvent = {\n\
-    \  event_name: \"page_view\",\n  custom_dimension: 123\n};\ntestEvent[mockData.timestampFieldName]\
-    \ = testTimestamp;\n\nconst testRows = [testEvent];\n\n// Call runCode to run\
-    \ the template's code.\nrunCode(mockData);\n\n// Verify that the tag finished\
-    \ successfully.\nassertApi('getAllEventData').wasCalled();\n\n// currently, it\
-    \ doesnt seem to be possible to \n// test the bigquery.insert function directly\n\
-    // therefore, I resolve to checking if the data\n// passed into it looks as expected\n\
-    assertApi('logToConsole').wasCalledWith(testRows);\nassertApi('logToConsole').wasCalledWith(testConnectionInfo);"
+  code: |-
+    const mockData = {
+      projectId: "test-project",
+      datasetId: "test_dataset",
+      tableId: "test_table",
+      writeableData: "fullEventData",
+      addTimestamp: true,
+      timestampFieldName: "timestamp"
+    };
+
+    const testConnectionInfo = JSON.stringify({
+      'projectId': mockData.tableId.split(".")[0],
+      'datasetId': mockData.tableId.split(".")[1],
+      'tableId': mockData.tableId.split(".")[2],
+    });
+
+    testEvent[mockData.timestampFieldName] = testTimestamp;
+
+    const testRows = JSON.stringify([testEvent]);
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('getAllEventData').wasCalled();
+
+    /**
+     * since we cannot directly test if the BigQuery.insert function was called
+     * with the right arguments we use this as a workaround and simply
+     * check if this logged function was called with the arguments that
+     * the BigQuery.insert function should be called with
+     */
+    assertApi('logToConsole').wasCalledWith("----testLog: connectionInfo = " + testConnectionInfo);
+    assertApi('logToConsole').wasCalledWith("----testLog: rows = " + testRows);
 - name: custom event data with timestamp
-  code: "const mockData = {\n  projectId: \"test-project\",\n  datasetId: \"test_dataset\"\
-    ,\n  tableId: \"test_table\",\n  writeableData: \"custom\",\n  customData: [{\n\
-    \    fieldName: \"test\",\n    fieldValue: \"testvalue\"\n  }, {\n    fieldName:\
-    \ \"another_test\",\n    fieldValue: \"another_value\"\n  }],\n  addTimestamp:\
-    \ true,\n  timestampFieldName: \"timestamp\"\n};\n\nconst testConnectionInfo =\
-    \ {\n  'projectId': mockData.tableId.split(\".\")[0],\n  'datasetId': mockData.tableId.split(\"\
-    .\")[1],\n  'tableId': mockData.tableId.split(\".\")[2],\n};\n\ntestEvent = undefined;\n\
-    testEvent = {\"test\":\"testvalue\",\"another_test\":\"another_value\"};\ntestEvent[mockData.timestampFieldName]\
-    \ = testTimestamp;\n\nconst testRows = [testEvent];\n\n// Call runCode to run\
-    \ the template's code.\nrunCode(mockData);\n\n// Verify that the tag finished\
-    \ successfully.\nassertApi('getAllEventData').wasNotCalled();\n\n// currently,\
-    \ it doesnt seem to be possible to \n// test the bigquery.insert function directly\n\
-    // therefore, I resolve to checking if the data\n// passed into it looks as expected\n\
-    assertApi('logToConsole').wasCalledWith(testRows);\nassertApi('logToConsole').wasCalledWith(testConnectionInfo);"
+  code: |-
+    const mockData = {
+      projectId: "test-project",
+      datasetId: "test_dataset",
+      tableId: "test_table",
+      writeableData: "custom",
+      customData: [{
+        fieldName: "test",
+        fieldValue: "testvalue"
+      }, {
+        fieldName: "another_test",
+        fieldValue: "another_value"
+      }],
+      addTimestamp: true,
+      timestampFieldName: "timestamp"
+    };
+
+    const testConnectionInfo = JSON.stringify({
+      'projectId': mockData.tableId.split(".")[0],
+      'datasetId': mockData.tableId.split(".")[1],
+      'tableId': mockData.tableId.split(".")[2],
+    });
+
+
+    let customTestData = {"test":"testvalue","another_test":"another_value"};
+    customTestData[mockData.timestampFieldName] = testTimestamp;
+
+    const testRows = JSON.stringify([customTestData]);
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('getAllEventData').wasNotCalled();
+
+    /**
+     * since we cannot directly test if the BigQuery.insert function was called
+     * with the right arguments we use this as a workaround and simply
+     * check if this logged function was called with the arguments that
+     * the BigQuery.insert function should be called with
+     */
+    assertApi('logToConsole').wasCalledWith("----testLog: connectionInfo = " + testConnectionInfo);
+    assertApi('logToConsole').wasCalledWith("----testLog: rows = " + testRows);
+
+    // make sure that the tag does not use the original testEvent from the setup tag
+    assertApi('logToConsole').wasNotCalledWith("----testLog: rows = " + JSON.stringify([testEvent]));
+- name: full event data plus custom data
+  code: |-
+    const mockData = {
+      projectId: "test-project",
+      datasetId: "test_dataset",
+      tableId: "test_table",
+      writeableData: "fullEventData",
+        customData: [{
+        fieldName: "cutom_test_field",
+        fieldValue: 123
+      }, {
+        fieldName: "another_cutom_test_field",
+        fieldValue: "another_value"
+      }],
+      addTimestamp: true,
+      timestampFieldName: "timestamp"
+    };
+
+    const originalValue = testEvent.original_key;
+
+
+    const testConnectionInfo = JSON.stringify({
+      'projectId': mockData.tableId.split(".")[0],
+      'datasetId': mockData.tableId.split(".")[1],
+      'tableId': mockData.tableId.split(".")[2],
+    });
+
+    // add the custom data to the default event data
+    for (let i = 0; i < mockData.customData.length; i += 1) {
+      const elem = mockData.customData[i];
+      testEvent[elem.fieldName] = elem.fieldValue;
+    }
+
+    // add the timestamp
+    testEvent[mockData.timestampFieldName] = testTimestamp;
+
+    const testRows = JSON.stringify([testEvent]);
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+
+    assertApi('getAllEventData').wasCalled();
+
+    /**
+     * since we cannot directly test if the BigQuery.insert function was called
+     * with the right arguments we use this as a workaround and simply
+     * check if this logged function was called with the arguments that
+     * the BigQuery.insert function should be called with
+     */
+    assertApi('logToConsole').wasCalledWith("----testLog: connectionInfo = " + testConnectionInfo);
+    assertApi('logToConsole').wasCalledWith("----testLog: rows = " + testRows);
+- name: full event plus custom data that override original values from event
+  code: |-
+    const mockData = {
+      projectId: "test-project",
+      datasetId: "test_dataset",
+      tableId: "test_table",
+      writeableData: "fullEventData",
+      customData: [{
+        fieldName: "original_key",
+        fieldValue: "custom_value"
+      }],
+      addTimestamp: true,
+      timestampFieldName: "timestamp"
+    };
+
+    const originalValue = testEvent.original_key;
+
+    const testConnectionInfo = JSON.stringify({
+      'projectId': mockData.tableId.split(".")[0],
+      'datasetId': mockData.tableId.split(".")[1],
+      'tableId': mockData.tableId.split(".")[2],
+    });
+
+    // add the custom data to the default event data
+    for (let i = 0; i < mockData.customData.length; i += 1) {
+      const elem = mockData.customData[i];
+      testEvent[elem.fieldName] = elem.fieldValue;
+    }
+
+    // add the timestamp
+    testEvent[mockData.timestampFieldName] = testTimestamp;
+
+    const testRows = JSON.stringify([testEvent]);
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+
+    assertApi('getAllEventData').wasCalled();
+
+    /**
+     * since we cannot directly test if the BigQuery.insert function was called
+     * with the right arguments we use this as a workaround and simply
+     * check if this logged function was called with the arguments that
+     * the BigQuery.insert function should be called with
+     */
+    assertApi('logToConsole').wasCalledWith("----testLog: connectionInfo = " + testConnectionInfo);
+    assertApi('logToConsole').wasCalledWith("----testLog: rows = " + testRows);
+
+    // better double check that the original value was not logged
+    let testEventWithOriginalValue = testEvent;
+    testEventWithOriginalValue.original_key = originalValue;
+    assertApi('logToConsole').wasNotCalledWith("----testLog: rows = " + JSON.stringify([testEventWithOriginalValue]));
 setup: |-
   // Arrange
   const getTimestampMillis = require('getTimestampMillis');
   const log = require("logToConsole");
-
-  let testEvent = {
-    event_name: "page_view",
-    page_location: "https://trakken.de/testpage"
-  };
+  const JSON = require("JSON");
 
   const testTimestamp = 1231231123;
 
+  let testEvent = {
+    event_name: "page_view",
+    page_location: "https://trakken.de/testpage",
+    nested_value: [{key: false}, {key: true}],
+    original_key: "original_value"
+  };
 
   mock('getAllEventData', () => {
     return testEvent;
