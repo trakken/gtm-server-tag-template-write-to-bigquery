@@ -257,12 +257,6 @@ ___TEMPLATE_PARAMETERS___
   },
   {
     "type": "LABEL",
-    "name": "label2 (2)",
-    "displayName": "▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️ ▪️",
-    "enablingConditions": []
-  },
-  {
-    "type": "LABEL",
     "name": "label3",
     "displayName": "cusotmize default event data. you can:",
     "enablingConditions": [
