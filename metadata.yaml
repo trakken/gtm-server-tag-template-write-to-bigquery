@@ -1,6 +1,8 @@
 homepage: "https://trkkn.com/"
 documentation: "https://github.com/trakken/gtm-server-tag-template-write-to-bigquery/blob/main/README.md"
 versions:
+  - sha: 76c7accc872f0f2ee3f8687afe3a0685251d5290
+    changeNotes: changed Trakken-URL
   - sha: 8fcaf991609135400d7c2089d153da0004e77b24
     changeNotes: edit/replace/remove logic added for event data.
   - sha: 8a79a8a394a159b0af1d4c48d758245020c10190
